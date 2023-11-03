@@ -84,6 +84,10 @@ const TableRow = ({ flag }) => {
   const flaggerName = flag.flagger.metadataJsonString ? JSON.parse(flag.flagger.metadataJsonString).name : flag.flagger.id;
   const targetName = flag.target.metadataJsonString ? JSON.parse(flag.target.metadataJsonString).name : flag.target.id;
 
+  const resultMapping = {
+    failed: 'not kicked',
+  }
+
   return (
     <>
       <tr style={cursorStyle} onClick={handleClick}>
@@ -92,7 +96,7 @@ const TableRow = ({ flag }) => {
         <td><a href={`${ROOT_URL}/network/operators/${flag.target.id}`} target="_blank" rel="noopener noreferrer">{targetName}</a></td>
         <td>{new Date(flag.flaggingTimestamp * 1000).toLocaleString()}</td>
         <td>{flag.votes.length}/{flag.reviewerCount}</td>
-        <td>{flag.result}</td>
+        <td>{resultMapping[flag.result] || flag.result}</td>
         <td>
           <a href={`${ROOT_URL}/network/sponsorships/${flag.sponsorship.id}`} target="_blank" rel="noopener noreferrer">
             <FontAwesomeIcon icon={faExternalLinkAlt} size="xs"/>
