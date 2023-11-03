@@ -88,6 +88,11 @@ const TableRow = ({ flag }) => {
     failed: 'not kicked',
   }
 
+  const styleMapping = {
+    failed: 'nokick',
+    kicked: 'kick'
+  }
+
   return (
     <>
       <tr style={cursorStyle} onClick={handleClick}>
@@ -96,7 +101,7 @@ const TableRow = ({ flag }) => {
         <td><a href={`${ROOT_URL}/network/operators/${flag.target.id}`} target="_blank" rel="noopener noreferrer">{targetName}</a></td>
         <td>{new Date(flag.flaggingTimestamp * 1000).toLocaleString()}</td>
         <td>{flag.votes.length}/{flag.reviewerCount}</td>
-        <td>{resultMapping[flag.result] || flag.result}</td>
+        <td className={styleMapping[flag.result] || ''}>{resultMapping[flag.result] || flag.result}</td>
         <td>
           <a href={`${ROOT_URL}/network/sponsorships/${flag.sponsorship.id}`} target="_blank" rel="noopener noreferrer">
             <FontAwesomeIcon icon={faExternalLinkAlt} size="xs"/>

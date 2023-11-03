@@ -2,16 +2,24 @@
 
 body {
   background-color: #000;
-  color: #0f0;
+  color: rgb(220, 220, 220);
   font-family: 'Courier New', Courier, monospace;
 }
 
 a {
-  color: #0f0;
+  color: rgb(196, 196, 196);
   text-decoration: none;
 }
 a:hover {
   color: #0ff;
+}
+
+.kick {
+  color: red;
+}
+
+.nokick {
+  color: green;
 }
 
 .App {
