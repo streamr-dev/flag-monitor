@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { formatEther } from 'ethers';
+import { toBigInt, formatEther } from 'ethers';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import './App.css';
@@ -107,6 +107,11 @@ const TableRow = ({ flag }) => {
     kicked: 'kick'
   }
 
+  const votesForKick = toBigInt(flag.votesForKick)
+  const votesAgainstKick = toBigInt(flag.votesAgainstKick)
+
+  const votesForKickFraction = flag.votes.length ? parseFloat(formatEther(votesForKick)) / parseFloat(formatEther(votesForKick + votesAgainstKick)) : 0
+
   return (
     <>
       <tr style={cursorStyle} onClick={handleClick}>
@@ -115,6 +120,7 @@ const TableRow = ({ flag }) => {
         <td><a href={`${ROOT_URL}/network/operators/${flag.target.id}`} target="_blank" rel="noopener noreferrer">{targetName}</a></td>
         <td>{new Date(flag.flaggingTimestamp * 1000).toLocaleString()}</td>
         <td>{flag.votes.length}/{flag.reviewerCount}</td>
+        <td>{Math.round(votesForKickFraction*100)}%</td>
         <td className={styleMapping[flag.result] || ''}>{resultMapping[flag.result] || flag.result}</td>
         <td>
           <a href={`${ROOT_URL}/network/sponsorships/${flag.sponsorship.id}`} target="_blank" rel="noopener noreferrer">
@@ -161,6 +167,7 @@ function App() {
               <th>Target</th>
               <th>Timestamp</th>
               <th>Votes</th>
+              <th>KickWeight</th>
               <th>Result</th>
               <th>Sponsorship</th>
             </tr>
