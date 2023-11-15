@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatEther } from 'ethers';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import './App.css';
@@ -43,28 +44,41 @@ query MyQuery {
     sponsorship {
       id
     }
+    reviewers {
+      id
+      metadataJsonString
+    }
   }
 }
 `;
 
-const VoteDetails = ({ votes }) => {
+const VoteDetails = ({ flag }) => {
+  const votesByVoterId = {}
+  flag.votes.forEach((vote) => {
+    votesByVoterId[vote.voter.id] = vote
+  })
   return (
     <table>
       <thead>
         <tr>
           <th>Voter ID</th>
           <th>Vote</th>
+          <th>Weight</th>
           <th>Timestamp</th>
         </tr>
       </thead>
       <tbody>
-        {votes.map((vote, index) => (
+        {flag.reviewers.map((reviewer, index) => {
+          const vote = votesByVoterId[reviewer.id]
+
+          return (
           <tr key={index}>
-            <td>{vote.voter.metadataJsonString ? JSON.parse(vote.voter.metadataJsonString).name : vote.voter.id}</td>
-            <td>{vote.votedKick ? 'Kick' : 'NoKick'}</td>
-            <td>{new Date(vote.timestamp * 1000).toLocaleString()}</td>
+            <td><a href={`${ROOT_URL}/network/operators/${reviewer.id}`} target="_blank" rel="noopener noreferrer">{reviewer.metadataJsonString ? JSON.parse(reviewer.metadataJsonString).name : reviewer.id}</a></td>
+            <td>{vote ? (vote.votedKick ? 'Kick' : 'NoKick') : '(didn\'t vote)'}</td>
+            <td>{vote ? Math.floor(parseFloat(formatEther(vote.voterWeight))) : ''}</td>
+            <td>{vote ? new Date(vote.timestamp * 1000).toLocaleString() : ''}</td>
           </tr>
-        ))}
+        )})}
       </tbody>
     </table>
   );
@@ -111,7 +125,7 @@ const TableRow = ({ flag }) => {
       {isExpanded && (
         <tr>
           <td colSpan="7">
-            <VoteDetails votes={flag.votes} />
+            <VoteDetails flag={flag} />
           </td>
         </tr>
       )}
