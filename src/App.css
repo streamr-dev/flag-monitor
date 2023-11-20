@@ -14,6 +14,10 @@ a:hover {
   color: #0ff;
 }
 
+a.selected {
+  text-decoration: underline;
+}
+
 .kick {
   color: red;
 }

@@ -5,18 +5,29 @@ import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import './App.css';
 import { ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
 
-const ROOT_URL = 'https://mumbai.streamr.network/hub'
+const NETWORKS = {
+  mumbai: {
+    hubBaseUrl: 'https://mumbai.streamr.network/hub',
+    apolloClient: new ApolloClient({
+      uri: 'https://api.thegraph.com/subgraphs/name/samt1803/network-subgraphs',
+      cache: new InMemoryCache()
+    }),
+  },
+  polygon: {
+    hubBaseUrl: 'https://streamr.network/hub',
+    apolloClient: new ApolloClient({
+      uri: 'https://gateway-arbitrum.network.thegraph.com/api/dd0022f5d4d06f3bd55e0c757912fb7d/subgraphs/id/EGWFdhhiWypDuz22Uy7b3F69E9MEkyfU9iAQMttkH5Rj',
+      cache: new InMemoryCache()
+    }),
+  },
+}
 
-// Initialize Apollo Client
-const client = new ApolloClient({
-  uri: 'https://api.thegraph.com/subgraphs/name/samt1803/network-subgraphs',
-  cache: new InMemoryCache()
-});
+const DEFAULT_NETWORK = 'mumbai'
 
 // Define GraphQL query
 const GET_FLAGS = gql`
 query MyQuery {
-  flags(orderBy: flaggingTimestamp, orderDirection: desc, first: 50) {
+  flags(orderBy: flaggingTimestamp, orderDirection: desc, first: 100) {
     target {
       id
       metadataJsonString
@@ -52,7 +63,7 @@ query MyQuery {
 }
 `;
 
-const VoteDetails = ({ flag }) => {
+const VoteDetails = ({ flag, network }) => {
   const votesByVoterId = {}
   flag.votes.forEach((vote) => {
     votesByVoterId[vote.voter.id] = vote
@@ -73,7 +84,7 @@ const VoteDetails = ({ flag }) => {
 
           return (
           <tr key={index}>
-            <td><a href={`${ROOT_URL}/network/operators/${reviewer.id}`} target="_blank" rel="noopener noreferrer">{reviewer.metadataJsonString ? JSON.parse(reviewer.metadataJsonString).name : reviewer.id}</a></td>
+            <td><a href={`${network.hubBaseUrl}/network/operators/${reviewer.id}`} target="_blank" rel="noopener noreferrer">{reviewer.metadataJsonString ? JSON.parse(reviewer.metadataJsonString).name : reviewer.id}</a></td>
             <td>{vote ? (vote.votedKick ? 'Kick' : 'NoKick') : '(didn\'t vote)'}</td>
             <td>{vote ? Math.floor(parseFloat(formatEther(vote.voterWeight))) : ''}</td>
             <td>{vote ? new Date(vote.timestamp * 1000).toLocaleString() : ''}</td>
@@ -84,7 +95,7 @@ const VoteDetails = ({ flag }) => {
   );
 };
 
-const TableRow = ({ flag }) => {
+const TableRow = ({ flag, network }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleClick = () => {
@@ -116,14 +127,14 @@ const TableRow = ({ flag }) => {
     <>
       <tr style={cursorStyle} onClick={handleClick}>
         <td>{isExpanded ? '▼' : flag.votes.length > 0 ? '►' : ''}</td>
-        <td><a href={`${ROOT_URL}/network/operators/${flag.flagger.id}`} target="_blank" rel="noopener noreferrer">{flaggerName}</a></td>
-        <td><a href={`${ROOT_URL}/network/operators/${flag.target.id}`} target="_blank" rel="noopener noreferrer">{targetName}</a></td>
+        <td><a href={`${network.hubBaseUrl}/network/operators/${flag.flagger.id}`} target="_blank" rel="noopener noreferrer">{flaggerName}</a></td>
+        <td><a href={`${network.hubBaseUrl}/network/operators/${flag.target.id}`} target="_blank" rel="noopener noreferrer">{targetName}</a></td>
         <td>{new Date(flag.flaggingTimestamp * 1000).toLocaleString()}</td>
         <td>{flag.votes.length}/{flag.reviewerCount}</td>
         <td>{Math.round(votesForKickFraction*100)}%</td>
         <td className={styleMapping[flag.result] || ''}>{resultMapping[flag.result] || flag.result}</td>
         <td>
-          <a href={`${ROOT_URL}/network/sponsorships/${flag.sponsorship.id}`} target="_blank" rel="noopener noreferrer">
+          <a href={`${network.hubBaseUrl}/network/sponsorships/${flag.sponsorship.id}`} target="_blank" rel="noopener noreferrer">
             <FontAwesomeIcon icon={faExternalLinkAlt} size="xs"/>
           </a>
         </td>
@@ -140,7 +151,9 @@ const TableRow = ({ flag }) => {
 };
 
 function App() {
-  const { loading, error, data, refetch } = useQuery(GET_FLAGS, { client });
+  const urlParams = new URLSearchParams(window.location.search);
+  const selectedNetwork = urlParams.get('network') || DEFAULT_NETWORK;
+  const { loading, error, data, refetch } = useQuery(GET_FLAGS, { client: NETWORKS[selectedNetwork].apolloClient });
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -153,12 +166,20 @@ function App() {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error :(</p>;
 
+  const networkConfig = NETWORKS[selectedNetwork]
+
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Streamr 1.0 Mumbai pre-testnet flags</h1>
+        <h1>Streamr 1.0 flag monitor</h1>
       </header>
       <main>
+        <div>
+          <label>Select Network:</label>&nbsp;
+          <a href="?network=mumbai" className={selectedNetwork === 'mumbai' ? 'selected' : ''}>Mumbai</a>&nbsp;
+          <a href="?network=polygon" className={selectedNetwork === 'polygon' ? 'selected' : ''}>Polygon</a>
+        </div>
+        
         <table>
           <thead>
             <tr>
@@ -174,7 +195,7 @@ function App() {
           </thead>
           <tbody>
             {data.flags.map((flag) => (
-              <TableRow key={flag.id} flag={flag} />
+              <TableRow key={flag.id} flag={flag} network={networkConfig} />
             ))}
           </tbody>
         </table>
