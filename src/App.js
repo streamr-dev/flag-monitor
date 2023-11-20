@@ -142,7 +142,7 @@ const TableRow = ({ flag, network }) => {
       {isExpanded && (
         <tr>
           <td colSpan="7">
-            <VoteDetails flag={flag} />
+            <VoteDetails flag={flag} network={network} />
           </td>
         </tr>
       )}
