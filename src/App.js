@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { toBigInt, formatEther } from 'ethers';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
-import './App.css';
 import { ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
+import FlagChart from './FlagChart';
+import './App.css';
+
 
 const NETWORKS = {
   mumbai: {
@@ -62,6 +64,26 @@ query MyQuery {
   }
 }
 `;
+
+
+// Calculate the timestamp which is at midnight UTC seven full days ago
+const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+startDate.setUTCHours(0, 0, 0, 0);
+const startDateTimestamp = Math.floor(startDate.getTime() / 1000);
+
+const GET_FLAG_STATS = gql`
+query MyQuery {
+  flags(
+    orderBy: flaggingTimestamp
+    orderDirection: asc
+    where: {flaggingTimestamp_gt: ${startDateTimestamp}}
+    first: 1000
+  ) {
+    flaggingTimestamp
+    result
+  }
+}
+`
 
 const VoteDetails = ({ flag, network }) => {
   const votesByVoterId = {}
@@ -153,20 +175,42 @@ const TableRow = ({ flag, network }) => {
 function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const selectedNetwork = urlParams.get('network') || DEFAULT_NETWORK;
-  const { loading, error, data, refetch } = useQuery(GET_FLAGS, { client: NETWORKS[selectedNetwork].apolloClient });
+  const { loading: loadingFlags, error: errorFlags, data: dataFlags, refetch: refetchFlags } = useQuery(GET_FLAGS, { client: NETWORKS[selectedNetwork].apolloClient });
+  const { loading: loadingStats, error: errorStats, data: dataStats, refetch: refetchStats } = useQuery(GET_FLAG_STATS, { client: NETWORKS[selectedNetwork].apolloClient });
 
   useEffect(() => {
     const interval = setInterval(() => {
-      refetch();
+      refetchFlags();
     }, 300000); // 300000 ms = 5 minutes
 
     return () => clearInterval(interval); // Clean up on component unmount
-  }, [refetch]);
+  }, [refetchFlags]);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error :(</p>;
+  if (loadingFlags || loadingStats) return <p>Loading...</p>;
+  if (errorFlags || errorStats) return <p>Error :(</p>;
 
   const networkConfig = NETWORKS[selectedNetwork]
+
+  const flagsPerDay = dataStats.flags.reduce((acc, flag) => {
+    const flagDate = new Date(flag.flaggingTimestamp * 1000);
+    const flagDay = `${flagDate.getUTCFullYear()}-${flagDate.getUTCMonth() + 1}-${flagDate.getUTCDate()}`;
+  
+    if (!acc[flagDay]) {
+      acc[flagDay] = { total: 0, results: {} };
+    }
+  
+    acc[flagDay].total++;
+  
+    if (!acc[flagDay].results[flag.result]) {
+      acc[flagDay].results[flag.result] = 0;
+    }
+  
+    acc[flagDay].results[flag.result]++;
+  
+    return acc;
+  }, {});
+
+  console.log(flagsPerDay)
 
   return (
     <div className="App">
@@ -174,12 +218,16 @@ function App() {
         <h1>Streamr 1.0 flag monitor</h1>
       </header>
       <main>
-        <div>
+        <div className='networkSelector'>
           <label>Select Network:</label>&nbsp;
           <a href="?network=mumbai" className={selectedNetwork === 'mumbai' ? 'selected' : ''}>Mumbai</a>&nbsp;
           <a href="?network=polygon" className={selectedNetwork === 'polygon' ? 'selected' : ''}>Polygon</a>
         </div>
-        
+
+        <div className='flagChart'>
+          <FlagChart flagsPerDay={flagsPerDay} />
+        </div>
+
         <table>
           <thead>
             <tr>
@@ -194,7 +242,7 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {data.flags.map((flag) => (
+            {dataFlags.flags.map((flag) => (
               <TableRow key={flag.id} flag={flag} network={networkConfig} />
             ))}
           </tbody>
