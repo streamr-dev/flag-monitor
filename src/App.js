@@ -117,16 +117,12 @@ const VoteDetails = ({ flag, network }) => {
   );
 };
 
-const TableRow = ({ flag, network }) => {
+const FlagInfo = ({ flag, network }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleClick = () => {
-    if (flag.votes.length > 0) {
-      setIsExpanded(!isExpanded);
-    }
+    setIsExpanded(!isExpanded);
   };
-
-  const cursorStyle = flag.votes.length > 0 ? { cursor: 'pointer' } : {};
 
   const flaggerName = flag.flagger.metadataJsonString ? JSON.parse(flag.flagger.metadataJsonString).name : flag.flagger.id;
   const targetName = flag.target.metadataJsonString ? JSON.parse(flag.target.metadataJsonString).name : flag.target.id;
@@ -147,8 +143,8 @@ const TableRow = ({ flag, network }) => {
 
   return (
     <>
-      <tr style={cursorStyle} onClick={handleClick}>
-        <td>{isExpanded ? '▼' : flag.votes.length > 0 ? '►' : ''}</td>
+      <tr style={{cursor: 'pointer'}} onClick={handleClick}>
+        <td>{isExpanded ? '▼' : '►'}</td>
         <td><a href={`${network.hubBaseUrl}/network/operators/${flag.flagger.id}`} target="_blank" rel="noopener noreferrer">{flaggerName}</a></td>
         <td><a href={`${network.hubBaseUrl}/network/operators/${flag.target.id}`} target="_blank" rel="noopener noreferrer">{targetName}</a></td>
         <td>{new Date(flag.flaggingTimestamp * 1000).toLocaleString()}</td>
@@ -243,7 +239,7 @@ function App() {
           </thead>
           <tbody>
             {dataFlags.flags.map((flag) => (
-              <TableRow key={flag.id} flag={flag} network={networkConfig} />
+              <FlagInfo key={flag.id} flag={flag} network={networkConfig} />
             ))}
           </tbody>
         </table>
