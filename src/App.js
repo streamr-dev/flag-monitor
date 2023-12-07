@@ -56,6 +56,9 @@ query MyQuery {
     result
     sponsorship {
       id
+      stream {
+        id
+      }
     }
     reviewers {
       id
@@ -141,6 +144,9 @@ const FlagInfo = ({ flag, network }) => {
 
   const votesForKickFraction = flag.votes.length ? parseFloat(formatEther(votesForKick)) / parseFloat(formatEther(votesForKick + votesAgainstKick)) : 0
 
+  const streamIdComponents = flag.sponsorship.stream.id.split('/')
+  const streamLinkText = `${streamIdComponents[0].substring(0,6)}.../${streamIdComponents[streamIdComponents.length-1]}`
+
   return (
     <>
       <tr style={{cursor: 'pointer'}} onClick={handleClick}>
@@ -153,7 +159,7 @@ const FlagInfo = ({ flag, network }) => {
         <td className={styleMapping[flag.result] || ''}>{resultMapping[flag.result] || flag.result}</td>
         <td>
           <a href={`${network.hubBaseUrl}/network/sponsorships/${flag.sponsorship.id}`} target="_blank" rel="noopener noreferrer">
-            <FontAwesomeIcon icon={faExternalLinkAlt} size="xs"/>
+            {streamLinkText}
           </a>
         </td>
       </tr>
