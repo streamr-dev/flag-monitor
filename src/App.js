@@ -1,20 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { toBigInt, formatEther } from 'ethers';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faExternalLinkAlt } from '@fortawesome/free-solid-svg-icons'
 import { ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
 import FlagChart from './FlagChart';
+import VotesChart from './VotesChart';
 import './App.css';
 
 
 const NETWORKS = {
-  mumbai: {
-    hubBaseUrl: 'https://mumbai.streamr.network/hub',
-    apolloClient: new ApolloClient({
-      uri: 'https://api.thegraph.com/subgraphs/name/samt1803/network-subgraphs',
-      cache: new InMemoryCache()
-    }),
-  },
   polygon: {
     hubBaseUrl: 'https://streamr.network/hub',
     apolloClient: new ApolloClient({
@@ -22,9 +14,16 @@ const NETWORKS = {
       cache: new InMemoryCache()
     }),
   },
+  mumbai: {
+    hubBaseUrl: 'https://mumbai.streamr.network/hub',
+    apolloClient: new ApolloClient({
+      uri: 'https://api.thegraph.com/subgraphs/name/samt1803/network-subgraphs',
+      cache: new InMemoryCache()
+    }),
+  },
 }
 
-const DEFAULT_NETWORK = 'mumbai'
+const DEFAULT_NETWORK = 'polygon'
 
 // Define GraphQL query
 const GET_FLAGS = gql`
@@ -222,14 +221,20 @@ function App() {
       <main>
         <div className='networkSelector'>
           <label>Select Network:</label>&nbsp;
-          <a href="?network=mumbai" className={selectedNetwork === 'mumbai' ? 'selected' : ''}>Mumbai</a>&nbsp;
-          <a href="?network=polygon" className={selectedNetwork === 'polygon' ? 'selected' : ''}>Polygon</a>
+          {Object.keys(NETWORKS).map(network => (
+            <a key={network} href={`?network=${network}`} className={selectedNetwork === network ? 'selected' : ''}>{network.charAt(0).toUpperCase() + network.slice(1)}</a>
+          ))}
         </div>
 
-        <div className='flagChart'>
-          <FlagChart flagsPerDay={flagsPerDay} />
+        <div className='chartsContainer'>
+          <div className='flagChart'>
+            <FlagChart flagsPerDay={flagsPerDay} />
+          </div>
+          <div className='flagChart'>
+            <VotesChart flags={dataFlags.flags} />
+          </div>
         </div>
-
+        
         <table>
           <thead>
             <tr>

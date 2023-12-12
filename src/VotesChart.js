@@ -17,37 +17,34 @@ ChartJS.register(
   Tooltip,
   Legend
 );
-
+  
 export const options = {
   responsive: true,
   scales: {
     x: {
       stacked: true,
+      display: false,
     },
     y: {
       stacked: true,
     },
   },
 };
-
-const FlagChart = ({ flagsPerDay }) => {
+  
+const VotesChart = ({ flags }) => {
+  const reversedFlags = [...flags].reverse().filter(flag => flag.result !== 'waiting')
   const data = {
-    labels: Object.keys(flagsPerDay),
+    labels: reversedFlags.map(flag => new Date(flag.flaggingTimestamp * 1000).toLocaleString()),
     datasets: [
       {
-        label: 'Not Kicked',
-        data: Object.values(flagsPerDay).map(day => day.results['failed'] || 0),
+        label: 'NoKick',
+        data: reversedFlags.map(flag => flag.votes.filter(vote => !vote.votedKick).length),
         backgroundColor: 'rgba(75, 192, 192, 0.6)',
       },
       {
-        label: 'Kicked',
-        data: Object.values(flagsPerDay).map(day => day.results['kicked'] || 0),
+        label: 'Kick',
+        data: reversedFlags.map(flag => flag.votes.filter(vote => vote.votedKick).length),
         backgroundColor: 'rgba(255, 99, 132, 0.6)',
-      },
-      {
-        label: 'Voting',
-        data: Object.values(flagsPerDay).map(day => day.results['voting'] || 0),
-        backgroundColor: 'rgba(153, 102, 255, 0.6)',
       },
     ],
   };
@@ -55,4 +52,4 @@ const FlagChart = ({ flagsPerDay }) => {
   return <Bar options={options} data={data} />;
 };
 
-export default FlagChart;
+export default VotesChart;

@@ -51,12 +51,31 @@ th {
   text-align: left;
 }
 
+@media screen and (max-width: 600px) {
+  .hideOnSmall {
+    display: none;
+  }
+}
+
 .networkSelector {
   text-align: center;
   margin-bottom: 20px;
 }
 
+.networkSelector a {
+  margin-right: 1em;
+}
+
+.chartsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
 .flagChart {
-  max-width: 600px;
-  margin: 0 auto;
+  width: 100%; /* Adjust this value as needed */
+  min-width: 300px; /* Minimum width of a chart */
+  flex: 1;
+  margin-right: 20px;
+  margin-left: 20px;
 }
