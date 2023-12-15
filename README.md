@@ -1,3 +1,3 @@
-# Flag viewer
+# Streamr flag viewer
 
-This quick React project shows flags and votes in the Mumbai pre-testnet. Mostly written by AI :)
+Shows recent flags and votes in the Streamr Network.
