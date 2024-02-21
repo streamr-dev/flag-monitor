@@ -24,6 +24,9 @@ export const options = {
   scales: {
     x: {
       stacked: true,
+      grid: {
+        drawOnChartArea: false,
+      },
     },
     y: {
       stacked: true,
@@ -38,7 +41,7 @@ const UniqueFlaggersChart = ({ flagsPerDay }) => {
       {
         label: 'Unique Flaggers',
         data: Object.values(flagsPerDay).map(day => Object.keys(day.flaggers).length),
-        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        backgroundColor: 'rgb(75, 192, 192)',
       },
     ],
   };

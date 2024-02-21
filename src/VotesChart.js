@@ -25,6 +25,9 @@ export const options = {
     x: {
       stacked: true,
       display: false,
+      grid: {
+        drawOnChartArea: false,
+      },
     },
     y: {
       stacked: true,
@@ -33,19 +36,19 @@ export const options = {
 };
   
 const VotesChart = ({ flags }) => {
-  const reversedFlags = [...flags].reverse().filter(flag => flag.result !== 'waiting')
+  const filteredFlags = flags.filter(flag => flag.result !== 'waiting')
   const data = {
-    labels: reversedFlags.map(flag => new Date(flag.flaggingTimestamp * 1000).toLocaleString()),
+    labels: filteredFlags.map(flag => new Date(flag.flaggingTimestamp * 1000).toLocaleString()),
     datasets: [
       {
         label: 'NoKick',
-        data: reversedFlags.map(flag => flag.votes.filter(vote => !vote.votedKick).length),
-        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+        data: filteredFlags.map(flag => flag.votes.filter(vote => !vote.votedKick).length),
+        backgroundColor: 'rgb(75, 192, 192)',
       },
       {
         label: 'Kick',
-        data: reversedFlags.map(flag => flag.votes.filter(vote => vote.votedKick).length),
-        backgroundColor: 'rgba(255, 99, 132, 0.6)',
+        data: filteredFlags.map(flag => flag.votes.filter(vote => vote.votedKick).length),
+        backgroundColor: 'rgb(255, 99, 132)',
       },
     ],
   };

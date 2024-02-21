@@ -177,41 +177,40 @@ function App() {
   const [error, setError] = useState(false)
 
   useEffect(() => {
-    if (!loadingFlags) {
-      setLoadingFlags(true)
-      ;(async () => {
-        let startDate = startDateTimestamp
-  
-        while (true) {
-          console.log(`Fetching flags starting from ${startDate}`)
-          let query = getFlagsQuery(startDate)
-          const apolloClient = NETWORKS[selectedNetwork].apolloClient
-  
-          try {
-            const { data } = await apolloClient.query({
-              query: query
-            });
-  
-            if (data.flags.length) {
-              setFlags((f) => [...f, ...data.flags]);
+    setFlags([])
+    setLoadingFlags(true)
+    ;(async () => {
+      let startDate = startDateTimestamp
 
-              // Fetch next page
-              startDate = data.flags[data.flags.length-1].flaggingTimestamp
-              console.log(`Got ${data.flags.length} flags. startDate for next page is ${startDate}`)
-            } else {
-              console.log(`Didn't find any further flags starting from date ${startDate}`)
-              // Stop the iteration
-              break
-            }
-          } catch (error) {
-            setError(true);
-            console.error("Error fetching flags:", error);
+      while (true) {
+        console.log(`Fetching flags starting from ${startDate}`)
+        let query = getFlagsQuery(startDate)
+        const apolloClient = NETWORKS[selectedNetwork].apolloClient
+
+        try {
+          const { data } = await apolloClient.query({
+            query: query
+          });
+
+          if (data.flags.length) {
+            setFlags((f) => [...f, ...data.flags]);
+
+            // Fetch next page
+            startDate = data.flags[data.flags.length-1].flaggingTimestamp
+            console.log(`Got ${data.flags.length} flags. startDate for next page is ${startDate}`)
+          } else {
+            console.log(`Didn't find any further flags starting from date ${startDate}`)
+            // Stop the iteration
             break
           }
+        } catch (error) {
+          setError(true);
+          console.error("Error fetching flags:", error);
+          break
         }
-        setLoadingFlags(false)
-      })()
-    }    
+      }
+      setLoadingFlags(false)
+    })()
   }, []);
 
   const flagsPerDay = useMemo(() => flags.reduce((acc, flag) => {
