@@ -20,6 +20,7 @@ ChartJS.register(
 
 export const options = {
   responsive: true,
+  maintainAspectRatio: false,
   scales: {
     x: {
       stacked: true,
@@ -52,7 +53,9 @@ const FlagChart = ({ flagsPerDay }) => {
     ],
   };
   
-  return <Bar options={options} data={data} />;
+  return (
+    <Bar options={options} data={data} />
+  );
 };
 
 export default FlagChart;

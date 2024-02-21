@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Row, Col, Spinner } from 'react-bootstrap'
 import { toBigInt, formatEther } from 'ethers';
-import { ApolloClient, InMemoryCache, gql, useQuery } from '@apollo/client';
+import { ApolloClient, InMemoryCache, gql } from '@apollo/client';
 import FlagChart from './FlagChart';
 import VotesChart from './VotesChart';
 import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
+const FETCH_DAYS = 14
+const PAGE_SIZE = 1000
 
 const NETWORKS = {
   polygon: {
@@ -26,9 +30,14 @@ const NETWORKS = {
 const DEFAULT_NETWORK = 'polygon'
 
 // Define GraphQL query
-const GET_FLAGS = gql`
+const getFlagsQuery = (flaggingDateGreaterThanSeconds) => gql`
 query MyQuery {
-  flags(orderBy: flaggingTimestamp, orderDirection: desc, first: 100) {
+  flags(
+    orderBy: flaggingTimestamp, 
+    orderDirection: asc, 
+    first: ${PAGE_SIZE},
+    where: {flaggingTimestamp_gt: ${flaggingDateGreaterThanSeconds}}
+  ) {
     target {
       id
       metadataJsonString
@@ -67,25 +76,10 @@ query MyQuery {
 }
 `;
 
-
 // Calculate the timestamp which is at midnight UTC seven full days ago
-const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+const startDate = new Date(Date.now() - FETCH_DAYS * 24 * 60 * 60 * 1000);
 startDate.setUTCHours(0, 0, 0, 0);
 const startDateTimestamp = Math.floor(startDate.getTime() / 1000);
-
-const GET_FLAG_STATS = gql`
-query MyQuery {
-  flags(
-    orderBy: flaggingTimestamp
-    orderDirection: asc
-    where: {flaggingTimestamp_gt: ${startDateTimestamp}}
-    first: 1000
-  ) {
-    flaggingTimestamp
-    result
-  }
-}
-`
 
 const VoteDetails = ({ flag, network }) => {
   const votesByVoterId = {}
@@ -176,23 +170,50 @@ const FlagInfo = ({ flag, network }) => {
 function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const selectedNetwork = urlParams.get('network') || DEFAULT_NETWORK;
-  const { loading: loadingFlags, error: errorFlags, data: dataFlags, refetch: refetchFlags } = useQuery(GET_FLAGS, { client: NETWORKS[selectedNetwork].apolloClient });
-  const { loading: loadingStats, error: errorStats, data: dataStats, refetch: refetchStats } = useQuery(GET_FLAG_STATS, { client: NETWORKS[selectedNetwork].apolloClient });
+
+  const [flags, setFlags] = useState([])
+  const [loadingFlags, setLoadingFlags] = useState(false)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      refetchFlags();
-    }, 300000); // 300000 ms = 5 minutes
+    if (!loadingFlags) {
+      setLoadingFlags(true)
+      ;(async () => {
+        let startDate = startDateTimestamp
+  
+        while (true) {
+          console.log(`Fetching flags starting from ${startDate}`)
+          let query = getFlagsQuery(startDate)
+          const apolloClient = NETWORKS[selectedNetwork].apolloClient
+  
+          try {
+            const { data } = await apolloClient.query({
+              query: query
+            });
+  
+            if (data.flags.length) {
+              setFlags((f) => [...f, ...data.flags]);
 
-    return () => clearInterval(interval); // Clean up on component unmount
-  }, [refetchFlags]);
+              // Fetch next page
+              startDate = data.flags[data.flags.length-1].flaggingTimestamp
+              console.log(`Got ${data.flags.length} flags. startDate for next page is ${startDate}`)
+            } else {
+              console.log(`Didn't find any further flags starting from date ${startDate}`)
+              // Stop the iteration
+              break
+            }
+          } catch (error) {
+            setError(true);
+            console.error("Error fetching flags:", error);
+            break
+          }
+        }
+        setLoadingFlags(false)
+      })()
+    }    
+  }, []);
 
-  if (loadingFlags || loadingStats) return <p>Loading...</p>;
-  if (errorFlags || errorStats) return <p>Error :(</p>;
-
-  const networkConfig = NETWORKS[selectedNetwork]
-
-  const flagsPerDay = dataStats.flags.reduce((acc, flag) => {
+  const flagsPerDay = useMemo(() => flags.reduce((acc, flag) => {
     const flagDate = new Date(flag.flaggingTimestamp * 1000);
     const flagDay = `${flagDate.getUTCFullYear()}-${flagDate.getUTCMonth() + 1}-${flagDate.getUTCDate()}`;
   
@@ -209,9 +230,42 @@ function App() {
     acc[flagDay].results[flag.result]++;
   
     return acc;
-  }, {});
+  }, {}), [flags]);
 
-  console.log(flagsPerDay)
+  function countFlagsBy(flags, getIdFn, getOperatorFn) {
+    const flagCountById = flags.reduce(
+      (acc, flag) => {
+        const id = getIdFn(flag)
+        if (!acc[id]) {
+          acc[id] = {
+            count: 1,
+            operator: getOperatorFn(flag)
+          }
+        }
+        else {
+          acc[id].count++
+        }
+
+        return acc;
+      },
+      {}
+    )
+    return Object.values(flagCountById).sort((a, b) => b.count - a.count).map(item => ({...item.operator, count: item.count}))
+  }
+
+  const topFlaggers = useMemo(() => countFlagsBy(flags, (flag) => flag.flagger.id, (flag) => flag.flagger), [flags]);
+  const topTargets = useMemo(() => countFlagsBy(flags, (flag) => flag.target.id, (flag) => flag.target), [flags]);
+
+  const networkConfig = NETWORKS[selectedNetwork]
+
+  console.log(topFlaggers)
+
+  if (loadingFlags) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Spinner animation="grow"/>
+    </div>
+  )
+  if (error) return <p>Error :(</p>;
 
   return (
     <div className="App">
@@ -230,11 +284,61 @@ function App() {
           <div className='flagChart'>
             <FlagChart flagsPerDay={flagsPerDay} />
           </div>
+        </div>
+        <div className='chartsContainer'>
           <div className='flagChart'>
-            <VotesChart flags={dataFlags.flags} />
+            <VotesChart flags={flags} />
           </div>
         </div>
         
+        <Row style={{marginTop: '40px', marginBottom: '40px'}}>
+            <Col lg={6}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Frequent Flaggers</th>
+                      <th>Count</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topFlaggers.slice(0, 5).map((operator) => (
+                      <tr>
+                        <td>
+                          <a href={`${networkConfig.hubBaseUrl}/network/operators/${operator.id}`} target="_blank" rel="noreferrer">
+                            {JSON.parse(operator.metadataJsonString).name}
+                          </a>
+                        </td>
+                        <td>{operator.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+            </Col>
+
+            <Col lg={6}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Frequent Targets</th>
+                      <th>Count</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topTargets.slice(0, 5).map((operator) => (
+                      <tr>
+                        <td>
+                          <a href={`${networkConfig.hubBaseUrl}/network/operators/${operator.id}`} target="_blank" rel="noreferrer">
+                            {JSON.parse(operator.metadataJsonString).name}
+                          </a>
+                        </td>
+                        <td>{operator.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+            </Col>
+        </Row>
+
         <table>
           <thead>
             <tr>
@@ -249,7 +353,7 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {dataFlags.flags.map((flag) => (
+            {[...flags].reverse().map((flag) => (
               <FlagInfo key={flag.id} flag={flag} network={networkConfig} />
             ))}
           </tbody>

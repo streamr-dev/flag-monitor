@@ -6,22 +6,6 @@ body {
   font-family: 'Courier New', Courier, monospace;
 }
 
-h1 {
-  text-align: left;
-}
-
-a {
-  color: rgb(196, 196, 196);
-  text-decoration: none;
-}
-a:hover {
-  color: #0ff;
-}
-
-a.selected {
-  text-decoration: underline;
-}
-
 .kick {
   color: red;
 }
@@ -78,4 +62,5 @@ th {
   flex: 1;
   margin-right: 20px;
   margin-left: 20px;
+  height: 400px;
 }
