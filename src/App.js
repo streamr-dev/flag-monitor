@@ -6,6 +6,7 @@ import FlagChart from './FlagChart';
 import VotesChart from './VotesChart';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import UniqueFlaggersChart from './UniqueFlaggersChart';
 
 const FETCH_DAYS = 14
 const PAGE_SIZE = 1000
@@ -218,10 +219,11 @@ function App() {
     const flagDay = `${flagDate.getUTCFullYear()}-${flagDate.getUTCMonth() + 1}-${flagDate.getUTCDate()}`;
   
     if (!acc[flagDay]) {
-      acc[flagDay] = { total: 0, results: {} };
+      acc[flagDay] = { total: 0, results: {}, flaggers: {} };
     }
   
     acc[flagDay].total++;
+    acc[flagDay].flaggers[flag.flagger.id] = true
   
     if (!acc[flagDay].results[flag.result]) {
       acc[flagDay].results[flag.result] = 0;
@@ -280,11 +282,23 @@ function App() {
           ))}
         </div>
 
-        <div className='chartsContainer'>
-          <div className='flagChart'>
-            <FlagChart flagsPerDay={flagsPerDay} />
-          </div>
-        </div>
+        <Row>
+          <Col lg={6}>
+            <div className='chartsContainer'>
+              <div className='flagChart'>
+                <FlagChart flagsPerDay={flagsPerDay} />
+              </div>
+            </div>
+          </Col>
+          <Col lg={6}>
+            <div className='chartsContainer'>
+              <div className='flagChart'>
+                <UniqueFlaggersChart flagsPerDay={flagsPerDay} />
+              </div>
+            </div>
+          </Col>
+        </Row>
+        
         <div className='chartsContainer'>
           <div className='flagChart'>
             <VotesChart flags={flags} />
