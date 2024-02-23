@@ -7,6 +7,7 @@ import VotesChart from './VotesChart';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import UniqueFlaggersChart from './UniqueFlaggersChart';
+import VoteAlignmentChart from './VoteAlignmentChart';
 
 const FETCH_DAYS = 14
 const PAGE_SIZE = 1000
@@ -301,6 +302,12 @@ function App() {
         <div className='chartsContainer'>
           <div className='flagChart'>
             <VotesChart flags={flags} />
+          </div>
+        </div>
+
+        <div className='chartsContainer'>
+          <div className='flagChart'>
+            <VoteAlignmentChart flags={flags} />
           </div>
         </div>
         
