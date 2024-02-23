@@ -234,29 +234,41 @@ function App() {
     return acc;
   }, {}), [flags]);
 
-  function countFlagsBy(flags, getIdFn, getOperatorFn) {
+  function countFlagsBy(flags, groupByFn, getOperatorFn, getCounterPartyFn) {
     const flagCountById = flags.reduce(
       (acc, flag) => {
-        const id = getIdFn(flag)
+        const id = groupByFn(flag)
         if (!acc[id]) {
           acc[id] = {
             count: 1,
-            operator: getOperatorFn(flag)
+            operator: getOperatorFn(flag),
+            counterParties: new Set()
           }
         }
         else {
           acc[id].count++
+          acc[id].counterParties.add(getCounterPartyFn(flag))
         }
 
         return acc;
       },
       {}
     )
-    return Object.values(flagCountById).sort((a, b) => b.count - a.count).map(item => ({...item.operator, count: item.count}))
+    return Object.values(flagCountById).sort((a, b) => b.count - a.count).map(item => ({...item.operator, count: item.count, uniqueCounterParties: item.counterParties.size}))
   }
 
-  const topFlaggers = useMemo(() => countFlagsBy(flags, (flag) => flag.flagger.id, (flag) => flag.flagger), [flags]);
-  const topTargets = useMemo(() => countFlagsBy(flags, (flag) => flag.target.id, (flag) => flag.target), [flags]);
+  const topFlaggers = useMemo(() => countFlagsBy(
+    flags, 
+    (flag) => flag.flagger.id, 
+    (flag) => flag.flagger,
+    (flag) => flag.target.id,
+  ), [flags]);
+  const topTargets = useMemo(() => countFlagsBy(
+    flags, 
+    (flag) => flag.target.id, 
+    (flag) => flag.target,
+    (flag) => flag.flagger.id,
+  ), [flags]);
 
   const networkConfig = NETWORKS[selectedNetwork]
 
@@ -313,11 +325,13 @@ function App() {
         
         <Row style={{marginTop: '40px', marginBottom: '40px'}}>
             <Col lg={6}>
+                <h3>Frequent Flaggers</h3>
                 <table>
                   <thead>
                     <tr>
-                      <th>Frequent Flaggers</th>
+                      <th>Operator</th>
                       <th>Count</th>
+                      <th>Unique Targets</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -329,6 +343,7 @@ function App() {
                           </a>
                         </td>
                         <td>{operator.count}</td>
+                        <td>{operator.uniqueCounterParties}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -336,11 +351,13 @@ function App() {
             </Col>
 
             <Col lg={6}>
+                <h3>Frequent Targets</h3>
                 <table>
                   <thead>
                     <tr>
-                      <th>Frequent Targets</th>
+                      <th>Operator</th>
                       <th>Count</th>
+                      <th>Unique Flaggers</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -352,6 +369,7 @@ function App() {
                           </a>
                         </td>
                         <td>{operator.count}</td>
+                        <td>{operator.uniqueCounterParties}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -359,6 +377,7 @@ function App() {
             </Col>
         </Row>
 
+        <h3>Flags</h3>
         <table>
           <thead>
             <tr>
