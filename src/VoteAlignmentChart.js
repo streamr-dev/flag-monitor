@@ -6,6 +6,7 @@ import {
   Tooltip,
   Legend,
   LineElement,
+  PointElement,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 
@@ -16,6 +17,7 @@ ChartJS.register(
   Tooltip,
   Legend,
   LineElement,
+  PointElement,
 );
   
 export const options = {
