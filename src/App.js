@@ -16,7 +16,7 @@ const NETWORKS = {
   polygon: {
     hubBaseUrl: 'https://streamr.network/hub',
     apolloClient: new ApolloClient({
-      uri: 'https://gateway-arbitrum.network.thegraph.com/api/dd0022f5d4d06f3bd55e0c757912fb7d/subgraphs/id/EGWFdhhiWypDuz22Uy7b3F69E9MEkyfU9iAQMttkH5Rj',
+      uri: 'https://gateway-arbitrum.network.thegraph.com/api/8bcbd55cdd1369cadb0bb813d9817776/subgraphs/id/EGWFdhhiWypDuz22Uy7b3F69E9MEkyfU9iAQMttkH5Rj',
       cache: new InMemoryCache()
     }),
   },
