@@ -7,7 +7,7 @@ import VotesChart from './VotesChart';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import UniqueFlaggersChart from './UniqueFlaggersChart';
-import VoteAlignmentChart from './VoteAlignmentChart';
+import { VoteAlignmentChart, calculateAlignment } from './VoteAlignmentChart';
 
 const FETCH_DAYS = 14
 const PAGE_SIZE = 1000
@@ -263,12 +263,45 @@ function App() {
     (flag) => flag.flagger,
     (flag) => flag.target.id,
   ), [flags]);
+  
   const topTargets = useMemo(() => countFlagsBy(
     flags, 
     (flag) => flag.target.id, 
     (flag) => flag.target,
     (flag) => flag.flagger.id,
   ), [flags]);
+
+  const averageFalseFlagsPerDay = useMemo(() => {
+    const falseFlagsPerDay = Object.values(flagsPerDay).reduce((acc, day) => {
+      acc += day.results.failed || 0;
+      return acc;
+    }, 0);
+    const uniqueDays = Object.keys(flagsPerDay).length;
+    return falseFlagsPerDay / uniqueDays;
+  }, [flagsPerDay]);
+
+  const averageKicksPerDay = useMemo(() => {
+    const kickFlagsPerDay = Object.values(flagsPerDay).reduce((acc, day) => {
+      acc += day.results.kicked || 0;
+      return acc;
+    }, 0);
+    const uniqueDays = Object.keys(flagsPerDay).length;
+    return kickFlagsPerDay / uniqueDays;
+  }, [flagsPerDay]);
+
+  const averageVoteAlignment = useMemo(() => {
+    const totalAlignment = flags.reduce((acc, flag) => {
+      return acc + calculateAlignment(flag.votes);
+    }, 0);
+    return totalAlignment / flags.length;
+  }, [flags])
+
+  const averageVoterCount = useMemo(() => {
+    const totalVoters = flags.reduce((acc, flag) => {
+      return acc + flag.votes.length;
+    }, 0);
+    return totalVoters / flags.length;
+  }, [flags])
 
   const networkConfig = NETWORKS[selectedNetwork]
 
@@ -324,7 +357,19 @@ function App() {
         </div>
         
         <Row style={{marginTop: '40px', marginBottom: '40px'}}>
-            <Col lg={6}>
+
+              <Col lg={4}>
+                <h3>Averages</h3>
+                <ul>
+                  <li>Flags per day: {(averageKicksPerDay + averageFalseFlagsPerDay).toFixed(1)}</li>
+                  <li>Kicks per day: {averageKicksPerDay.toFixed(1)}</li>
+                  <li>False flags per day: {averageFalseFlagsPerDay.toFixed(1)}</li>
+                  <li>Vote alignment: {(averageVoteAlignment*100).toFixed(1)} %</li>
+                  <li>Voter participation: {(100*averageVoterCount/7).toFixed(1)} %</li>
+                </ul>
+            </Col>
+
+            <Col lg={4}>
                 <h3>Frequent Flaggers</h3>
                 <table>
                   <thead>
@@ -350,7 +395,7 @@ function App() {
                 </table>
             </Col>
 
-            <Col lg={6}>
+            <Col lg={4}>
                 <h3>Frequent Targets</h3>
                 <table>
                   <thead>

@@ -42,13 +42,13 @@ export const options = {
   },
 };
 
-function calculateAlignment(votes) {
+export function calculateAlignment(votes) {
   let kick = 0
   votes.forEach(vote => (vote.votedKick ? kick++ : null))
   return (votes.length ? Math.max(kick, votes.length - kick) / votes.length : 0)
 }
   
-const VoteAlignmentChart = ({ flags }) => {
+export function VoteAlignmentChart({ flags }) {
   const filteredFlags = flags.filter(flag => flag.result !== 'waiting')
   const data = {
     labels: filteredFlags.map(flag => new Date(flag.flaggingTimestamp * 1000).toLocaleString()),
@@ -66,5 +66,3 @@ const VoteAlignmentChart = ({ flags }) => {
   
   return <Line options={options} data={data} />;
 };
-
-export default VoteAlignmentChart;
