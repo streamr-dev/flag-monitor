@@ -20,10 +20,10 @@ const NETWORKS = {
       cache: new InMemoryCache()
     }),
   },
-  mumbai: {
-    hubBaseUrl: 'https://mumbai.streamr.network/hub',
+  "amoy-testnet": {
+    hubBaseUrl: 'https://streamr.network/hub',
     apolloClient: new ApolloClient({
-      uri: 'https://api.thegraph.com/subgraphs/name/samt1803/network-subgraphs',
+      uri: 'https://api.studio.thegraph.com/query/58729/streamr-amoy-testnet/version/latest',
       cache: new InMemoryCache()
     }),
   },
