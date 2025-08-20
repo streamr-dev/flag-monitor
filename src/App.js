@@ -32,13 +32,18 @@ const NETWORKS = {
 const DEFAULT_NETWORK = 'polygon'
 
 // Define GraphQL query
-const getFlagsQuery = (flaggingDateGreaterThanSeconds) => gql`
+const getFlagsQuery = (flaggingDateGreaterThanSeconds, flaggingDateLessThanSeconds) => {
+  const whereFilters = [`flaggingTimestamp_gt: ${flaggingDateGreaterThanSeconds}`]
+  if (flaggingDateLessThanSeconds != null) {
+    whereFilters.push(`flaggingTimestamp_lt: ${flaggingDateLessThanSeconds}`)
+  }
+  return gql`
 query MyQuery {
   flags(
     orderBy: flaggingTimestamp, 
     orderDirection: asc, 
     first: ${PAGE_SIZE},
-    where: {flaggingTimestamp_gt: ${flaggingDateGreaterThanSeconds}}
+    where: {${whereFilters.join(', ')}}
   ) {
     target {
       id
@@ -76,7 +81,8 @@ query MyQuery {
     }
   }
 }
-`;
+`
+};
 
 const VoteDetails = ({ flag, network }) => {
   const votesByVoterId = {}
@@ -168,6 +174,7 @@ function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const selectedNetwork = urlParams.get('network') || DEFAULT_NETWORK;
   const startDateParam = urlParams.get('startDate')
+  const endDateParam = urlParams.get('endDate')
 
   const startDateTimestamp = useMemo(() => {
     if (startDateParam && /^\d{4}-\d{2}-\d{2}$/.test(startDateParam)) {
@@ -181,6 +188,17 @@ function App() {
     return Math.floor(d.getTime() / 1000)
   }, [startDateParam])
 
+  const endDateTimestampExclusive = useMemo(() => {
+    if (endDateParam && /^\d{4}-\d{2}-\d{2}$/.test(endDateParam)) {
+      const parsed = new Date(`${endDateParam}T00:00:00Z`)
+      if (!isNaN(parsed.getTime())) {
+        const nextDay = new Date(parsed.getTime() + 24 * 60 * 60 * 1000)
+        return Math.floor(nextDay.getTime() / 1000)
+      }
+    }
+    return null
+  }, [endDateParam])
+
   const [flags, setFlags] = useState([])
   const [loadingFlags, setLoadingFlags] = useState(false)
   const [error, setError] = useState(false)
@@ -193,7 +211,7 @@ function App() {
 
       while (true) {
         console.log(`Fetching flags starting from ${startDate}`)
-        let query = getFlagsQuery(startDate)
+        let query = getFlagsQuery(startDate, endDateTimestampExclusive)
         const apolloClient = NETWORKS[selectedNetwork].apolloClient
 
         try {
