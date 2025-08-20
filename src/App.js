@@ -78,11 +78,6 @@ query MyQuery {
 }
 `;
 
-// Calculate the timestamp which is at midnight UTC seven full days ago
-const startDate = new Date(Date.now() - FETCH_DAYS * 24 * 60 * 60 * 1000);
-startDate.setUTCHours(0, 0, 0, 0);
-const startDateTimestamp = Math.floor(startDate.getTime() / 1000);
-
 const VoteDetails = ({ flag, network }) => {
   const votesByVoterId = {}
   flag.votes.forEach((vote) => {
@@ -172,6 +167,19 @@ const FlagInfo = ({ flag, network }) => {
 function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const selectedNetwork = urlParams.get('network') || DEFAULT_NETWORK;
+  const startDateParam = urlParams.get('startDate')
+
+  const startDateTimestamp = useMemo(() => {
+    if (startDateParam && /^\d{4}-\d{2}-\d{2}$/.test(startDateParam)) {
+      const parsed = new Date(`${startDateParam}T00:00:00Z`)
+      if (!isNaN(parsed.getTime())) {
+        return Math.floor(parsed.getTime() / 1000)
+      }
+    }
+    const d = new Date(Date.now() - FETCH_DAYS * 24 * 60 * 60 * 1000)
+    d.setUTCHours(0, 0, 0, 0)
+    return Math.floor(d.getTime() / 1000)
+  }, [startDateParam])
 
   const [flags, setFlags] = useState([])
   const [loadingFlags, setLoadingFlags] = useState(false)
